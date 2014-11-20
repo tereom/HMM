@@ -3,20 +3,17 @@
 library("raster")
 
 # read data
-load("df_npp_month.RData")
+load("data/df_npp_month.RData")
 
 # ImageMagick execution example (turn individual pngs to animated gif)
 # convert -delay 80 *.png tere.gif
-
-# head
-str(df_npp_month)
 
 # n of dates
 n <- length(unique(df_npp_month$date))
 
 
 # set output images (files)
-png(file="D:/Julian/59_animacion_tere/frame%03d.png",width=1500,height=1000)
+png(file="data/animation/frame%03d.png",width=1500,height=1000)
 
 # write loop
 for (i in 1:n){
@@ -49,5 +46,3 @@ for (i in 1:n){
   # plot mean npp layers
   plot(data_frame_mean_npp,zlim=c(0,650),)
 }
-
-max(df_npp_month$mean_npp)

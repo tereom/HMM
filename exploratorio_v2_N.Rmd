@@ -51,7 +51,7 @@ library(depmixS4)
 library(Rgraphviz)
 source("src/tema_ggplot.R")
 source("src/functions.R")
-load("data/df_npp.RData")
+load("data/df_npp_N.RData")
 ```
 
 # Spatial and temporal dependency
@@ -125,99 +125,12 @@ summary(fit_npp)
 ```
 
 
-B-splines to account for within year seasonality and across years trend:
-
-```{r}
-# trend
-basis_y <- create.bspline.basis(
-  norder = 4, # polinomios cúbicos
-  breaks = c(2000, 2005, 2009, 2014)) # nodos en los cuartiles de x
-
-# basis
-plot(basis_y, lty = "solid")
-H_y <- eval.basis(df_npp$year, basis_y)
-colnames(H_y) <- paste("sp_y", 1:6, sep = "_")
-
-df_sp <- data.frame(npp = df_npp$npp, H_y)
-fit_sp_y <- lm(npp ~ -1 + ., data = df_sp)
-summary(fit_sp_y)
-
-mu <- function(x, betas, basis){
-  as.numeric(betas %*% t(eval.basis(x, basis)))
-}
-
-coefs <- summary(fit_sp_y)$coefficients
-coefs_y <- as.vector(coefs[str_detect(rownames(coefs), "sp_y"), ][, 1])
-
-ggplot(df_npp, aes(x = year, y = npp, color = factor(year))) +
-  geom_point(size = 0.5) + 
-  stat_function(fun = mu, arg = list(betas = coefs_y, basis = basis_y), 
-                color = "blue") +
-  labs(title = "B-splines")
-
-df_npp$resid_y <- residuals(fit_sp_y)
-
-df_sp_plot <- df_npp %>% 
-  dplyr::select(npp, resid_y, date) %>%
-  tidyr::gather(var, value, npp, resid_y)
-
-ggplot(df_sp_plot, aes(x = date, y = value, group = var)) +
-  geom_line(alpha = 0.3) +
-  facet_wrap(~ var, ncol = 1, scales = "free_y") +
-  geom_smooth(color = "red", n = 200)
-
-```
-
-
-```{r}
-##### B-splines
-# monthly seasonality
-basis_m <- create.bspline.basis(
-  # norder = 4, # polinomios cúbicos
-  breaks = seq(1, 52, 3) # nodos en los cuartiles de x
-    )
-# basis
-plot(basis_m, lty = "solid")
-H_m <- eval.basis(df_npp$week, basis_m)
-colnames(H_m) <- paste("sp_m", 1:20, sep = "_")
-
-df_sp_m <- data.frame(npp = df_npp$npp, H_m)
-fit_sp_m <- lm(npp ~ -1 + ., data = df_sp_m)
-summary(fit_sp_m)
-
-coefs_m <- summary(fit_sp_m)$coefficients
-coefs_m <- as.vector(coefs_m[str_detect(rownames(coefs_m), "sp_m"), ][, 1])
-
-# mu: function to creat spline curve
-mu <- function(x, betas, basis){
-  as.numeric(betas %*% t(eval.basis(x, basis)))
-}
-
-ggplot(df_npp, aes(x = week, y = npp, color = factor(year))) +
-  geom_point(size = 0.5, alpha = 0.4) + 
-  stat_function(fun = mu, arg = list(betas = coefs_m, basis = basis_m), 
-                color = "blue") +
-  labs(title = "B-splines")
-
-##
-df_npp$resid <- residuals(fit_sp_m)
-
-df_sp_plot <- df_npp %>% 
-  dplyr::select(npp, resid, date) %>%
-  gather(var, value, npp, resid)
-
-ggplot(df_sp_plot, aes(x = date, y = value)) +
-  geom_line(alpha = 0.3) +
-  facet_wrap(~ var, ncol = 1, scales = "free_y") +
-  geom_smooth(color = "red", span = 0.02)
-
-```
 
 ## LOESS
 
 ```{r}
 
-npp_12 <- filter(df_npp, year > 2001, year < 2006, .id == "3804500_1008500")
+npp_12 <- filter(df_npp, year > 2001, year < 2006, .id == )
 ts_np <- ts(npp_12$npp, frequency = 46)
 decomposed <- stl(ts_np, s.window="periodic")
 plot(decomposed)
@@ -272,7 +185,7 @@ mod_5s <- depmix(mean_npp ~ x_s + y_s, data = df_npp_month, nstates = 5,
 # initial values for EM algorithm
 mod_5s 
 fit_5s <- fit(mod_5s,  emcontrol = em.control(maxit = 200))
-save(fit_5s, file = "data/fit_5s.RData")
+save(fit_5s, file = "data/fit_5s_N.RData")
 summary(fit_5s)
 
 # Posterior
@@ -311,7 +224,7 @@ ggplot(df_npp_month) +
               alpha = 0.1)
 
 
-#save(df_npp_month, file = "data/df_npp_month.RData")
+save(df_npp_month, file = "data/df_npp_month_N.RData")
 ```
 
 
